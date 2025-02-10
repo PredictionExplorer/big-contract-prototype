@@ -28,7 +28,7 @@ const basicDeployment = async function (
       await game2.waitForDeployment();
       game2Addr = await game2.getAddress();
    } else {
-      game2 = await game2Factory.attach(game2Addr);
+      game2 = game2Factory.attach(game2Addr);
    }
 
 	const game1Factory = await hre.ethers.getContractFactory("Game1", deployerAcct);

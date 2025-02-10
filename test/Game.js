@@ -14,15 +14,13 @@ describe("Game", function () {
 		const [, bidder1, bidder2, signer3,] = signers;
 
 		// We will use this to call `game2` methods via `game1`.
-		const game1AsGame2 =
-			// await hre.ethers.getContractAt("Game2", game1Addr, deployerAcct);
-			await game2Factory.attach(game1Addr);
+		const game1AsGame2 = game2Factory.attach(game1Addr);
 
 		expect(await game1.game2()).equal(game2Addr);
 		expect(await game2.game1()).equal(game1Addr);
 
 		// Bid by sending ETH.
-		await bidder1.sendTransaction({to: await game1Addr, value: 10n,});
+		await bidder1.sendTransaction({to: game1Addr, value: 10n,});
 
 		// Zero value is not allowed.
 		await expect(game1.connect(bidder1).bidWithEth({value: 0n,})).reverted;
@@ -49,7 +47,7 @@ describe("Game", function () {
 		expect(await game2.roundNum()).equal(0n);
 
 		// Transferring some ETH to `game2`. We are supposed to get it back on contract destruction.
-		await signer3.sendTransaction({to: await game2Addr, value: 10_000n,});
+		await signer3.sendTransaction({to: game2Addr, value: 10_000n,});
 
 		// An unauthorized caller attempts to call a restricted method.
 		await expect(game1.connect(signer3).destruct(true, signer3.getAddress())).reverted;

@@ -11,7 +11,7 @@ const { basicDeployment } = require("./Deploy.js");
 // #endregion
 // #region `deployContractsForTesting`
 
-/// This function is to be passed to `loadFixture`.
+/// This function is to be used for unit tests. It's to be passed to `loadFixture`.
 async function deployContractsForTesting() {
 	const signers = await hre.ethers.getSigners();
 	const deployerAcct = signers[19];
