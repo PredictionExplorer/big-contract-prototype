@@ -70,7 +70,7 @@ describe("Game", function () {
 		// expect(await hre.ethers.provider.getCode(game1Addr)).equal("0x");
 		// expect(await hre.ethers.provider.getCode(game2Addr)).equal("0x");
 
-		// todo-1 For some reason, this validation succeeds.
+		// todo-1 For some reason, this validation succeeds, despite of the fact that the contract has been destroyed.
 		expect(await game1.roundNum()).equal(1n);
 
 		// At least these validations succeed.
