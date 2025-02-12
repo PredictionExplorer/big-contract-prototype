@@ -6,7 +6,7 @@
 // #region
 
 const hre = require("hardhat");
-const { deployContracts } = require("./Deploy.js");
+const { deployContracts } = require("./ContractDeploymentHelpers.js");
 
 // #endregion
 // #region `deployContractsForUnitTesting`
