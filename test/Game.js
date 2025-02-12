@@ -68,9 +68,7 @@ describe("Game", function () {
 		// Both game contracts have been deleted from the blockchain.
 		// todo-1 For some reason, these validations fail.
 		// expect(await hre.ethers.provider.getCode(game1Addr)).equal("0x");
-		// await expect(game1.roundNum()).reverted;
 		// expect(await hre.ethers.provider.getCode(game2Addr)).equal("0x");
-		// await expect(game2.roundNum()).reverted;
 
 		// todo-1 For some reason, this validation succeeds.
 		expect(await game1.roundNum()).equal(1n);
