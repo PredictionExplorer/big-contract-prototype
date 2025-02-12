@@ -11,7 +11,7 @@ const { HardhatContext } = require("hardhat/internal/context");
 // #region `deployContracts`
 
 /**
- * @param {import("ethers").Signer} deployerAcct 
+ * @param {import("ethers").BaseWallet} deployerAcct 
  * @param {string} game2Addr May be empty.
  * @returns 
  */

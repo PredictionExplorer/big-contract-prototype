@@ -15,8 +15,7 @@ const { deployContracts } = require("./ContractDeploymentHelpers.js");
 async function deployContractsForUnitTesting() {
 	const signers = await hre.ethers.getSigners();
 	const deployerAcct = signers[19];
-	const contracts =
-		await deployContracts(deployerAcct, "");
+	const contracts = await deployContracts(deployerAcct, "");
 	contracts.signers = signers;
 	contracts.deployerAcct = deployerAcct;
 	return contracts;
