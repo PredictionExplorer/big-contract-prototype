@@ -6,17 +6,17 @@
 // #region
 
 const hre = require("hardhat");
-const { basicDeployment } = require("./Deploy.js");
+const { deployContracts } = require("./Deploy.js");
 
 // #endregion
-// #region `deployContractsForTesting`
+// #region `deployContractsForUnitTesting`
 
 /// This function is to be used for unit tests. It's to be passed to `loadFixture`.
-async function deployContractsForTesting() {
+async function deployContractsForUnitTesting() {
 	const signers = await hre.ethers.getSigners();
 	const deployerAcct = signers[19];
 	const contracts =
-		await basicDeployment(deployerAcct, "");
+		await deployContracts(deployerAcct, "");
 	contracts.signers = signers;
 	contracts.deployerAcct = deployerAcct;
 	return contracts;
@@ -26,7 +26,7 @@ async function deployContractsForTesting() {
 // #region
 
 module.exports = {
-	deployContractsForTesting,
+	deployContractsForUnitTesting,
 };
 
 // #endregion

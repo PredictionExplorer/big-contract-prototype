@@ -4,13 +4,13 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { deployContractsForTesting } = require("../src/ContractTestingHelpers.js");
+const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHelpers.js");
 
 describe("Game", function () {
 	it("Test 1", async function () {
 		const {signers, deployerAcct, game1, game1Addr, game2Factory, game2, game2Addr,} =
-			// await deployContractsForTesting();
-			await loadFixture(deployContractsForTesting);
+			// await deployContractsForUnitTesting();
+			await loadFixture(deployContractsForUnitTesting);
 		const [, bidder1, bidder2, signer3,] = signers;
 
 		// We will use this to call `game2` methods via `game1`.

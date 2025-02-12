@@ -8,14 +8,14 @@
 const { HardhatContext } = require("hardhat/internal/context");
 
 // #endregion
-// #region `basicDeployment`
+// #region `deployContracts`
 
 /**
  * @param {import("ethers").Signer} deployerAcct 
  * @param {string} game2Addr May be empty.
  * @returns 
  */
-const basicDeployment = async function (
+const deployContracts = async function (
 	deployerAcct,
    game2Addr
 ) {
@@ -51,6 +51,6 @@ const basicDeployment = async function (
 // #endregion
 // #region
 
-module.exports = { basicDeployment, };
+module.exports = { deployContracts, };
 
 // #endregion
