@@ -8,10 +8,10 @@ const { deployContractsForUnitTesting } = require("../src/ContractUnitTestingHel
 
 describe("Game", function () {
 	it("Test 1", async function () {
-		const {signers, deployerAcct, game1, game1Addr, game2Factory, game2, game2Addr,} =
+		const {signers, /*deployerAcct,*/ game1, game1Addr, game2Factory, game2, game2Addr,} =
 			// await deployContractsForUnitTesting();
 			await loadFixture(deployContractsForUnitTesting);
-		const [, bidder1, bidder2, signer3,] = signers;
+		const [signer0, bidder1, bidder2, signer3,] = signers;
 
 		// We will use this to call `game2` methods via `game1`.
 		const game1AsGame2 = game2Factory.attach(game1Addr);
@@ -19,10 +19,10 @@ describe("Game", function () {
 		expect(await game1.game2()).equal(game2Addr);
 		expect(await game2.game1()).equal(game1Addr);
 
-		// Bid by sending ETH.
+		// Bidding by sending ETH.
 		await bidder1.sendTransaction({to: game1Addr, value: 10n,});
 
-		// Zero value is not allowed.
+		// Bidding with zero value is not allowed.
 		await expect(game1.connect(bidder1).bidWithEth({value: 0n,})).reverted;
 
 		await game1.connect(bidder1).bidWithEth({value: 100n,});
@@ -50,7 +50,7 @@ describe("Game", function () {
 		await signer3.sendTransaction({to: game2Addr, value: 10_000n,});
 
 		// An unauthorized caller attempts to call a restricted method.
-		await expect(game1.connect(signer3).destruct(true, signer3.getAddress())).reverted;
+		await expect(game1.connect(signer3).destruct(true, signer3.address)).reverted;
 
 		// An unauthorized caller attempts to call a restricted method.
 		await expect(game2.connect(signer3).destruct()).reverted;
@@ -58,23 +58,22 @@ describe("Game", function () {
 		// An unauthorized caller attempts to call a restricted method via `delegatecall`.
 		await expect(game1AsGame2.connect(signer3).destruct()).reverted;
 
-		const signer3BalanceAmountBefore_ = await hre.ethers.provider.getBalance(signer3.address);
-		await game1.connect(deployerAcct).destruct(true, signer3.getAddress());
-		const signer3BalanceAmountAfter_ = await hre.ethers.provider.getBalance(signer3.address);
+		const signer3BalanceAmountBeforeContractDestruction = await hre.ethers.provider.getBalance(signer3.address);
+
+		// This transaction is executed by `deployerAcct`.
+		await game1.destruct(true, signer3.address);
+
+		const signer3BalanceAmountAfterContractDestruction = await hre.ethers.provider.getBalance(signer3.address);
 
 		// We got back ETH from both game accounts.
-		expect(signer3BalanceAmountAfter_).equal(signer3BalanceAmountBefore_ + 11_110n);
-
-		// Both game contracts have been deleted from the blockchain.
-		// todo-1 For some reason, these validations fail.
-		// expect(await hre.ethers.provider.getCode(game1Addr)).equal("0x");
-		// expect(await hre.ethers.provider.getCode(game2Addr)).equal("0x");
-
-		// todo-1 For some reason, this validation succeeds, despite of the fact that the contract has been destroyed.
-		expect(await game1.roundNum()).equal(1n);
-
-		// At least these validations succeed.
+		expect(signer3BalanceAmountAfterContractDestruction).equal(signer3BalanceAmountBeforeContractDestruction + 11_110n);
 		expect(await hre.ethers.provider.getBalance(game1Addr)).equal(0n);
 		expect(await hre.ethers.provider.getBalance(game2Addr)).equal(0n);
+
+		// Surprisingly, bytecode and storage of both game contracts have not been deleted from the blockchain,
+		// which is how stuff currently works by design.
+		expect(await hre.ethers.provider.getCode(game1Addr)).not.equal("0x");
+		expect(await hre.ethers.provider.getCode(game2Addr)).not.equal("0x");
+		expect(await game1.roundNum()).equal(1n);
 	});
 });
