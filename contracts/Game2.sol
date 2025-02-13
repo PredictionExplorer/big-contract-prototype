@@ -4,11 +4,6 @@ pragma solidity ^0.8.28;
 import { GameBase } from "./GameBase.sol";
 
 contract Game2 is GameBase {
-	// @notice The `Game1` contract address.
-	// @dev It's possible to declare this `immutable`if `Game1` constructor deployed `Game2`.
-	// But doing so would probably not result in a significant efficiency improvement.
-	address public game1;
-
 	constructor() {
 	}
 

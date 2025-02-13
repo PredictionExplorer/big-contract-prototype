@@ -16,8 +16,12 @@ describe("Game", function () {
 		// We will use this to call `game2` methods via `delegatecall`.
 		const game1AsGame2 = game2Factory.attach(game1Addr);
 
+		expect(await game1.game1()).equal(hre.ethers.ZeroAddress);
 		expect(await game1.game2()).equal(game2Addr);
 		expect(await game2.game1()).equal(game1Addr);
+		expect(await game2.game2()).equal(hre.ethers.ZeroAddress);
+		await expect(game2.connect(signer3).prepare(signer3.address)).revertedWithCustomError(game2, "OwnableUnauthorizedAccount");
+		await expect(game1AsGame2.connect(signer3).prepare(signer3.address)).revertedWithCustomError(game1AsGame2, "OwnableUnauthorizedAccount");
 
 		// Bidding by sending ETH.
 		await bidder1.sendTransaction({to: game1Addr, value: 10n,});
@@ -45,10 +49,7 @@ describe("Game", function () {
 
 		await expect(game1.connect(signer3).destruct(true, signer3.address)).revertedWithCustomError(game1, "OwnableUnauthorizedAccount");
 		await expect(game2.connect(signer3).destruct()).revertedWith("Game2.destruct caller is unauthorized.");
-
-		// Calling `game2.destruct` via `delegatecall`.
 		await expect(game1AsGame2.connect(signer3).destruct()).revertedWith("Game2.destruct caller is unauthorized.");
-
 		const signer3BalanceAmountBeforeContractDestruction = await hre.ethers.provider.getBalance(signer3.address);
 
 		// This call is made by `deployerAcct`.

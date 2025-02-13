@@ -5,11 +5,8 @@ import { GameBase } from "./GameBase.sol";
 import { Game2 } from "./Game2.sol";
 
 contract Game1 is GameBase {
-	// @notice The `Game2` contract address.
-	Game2 public immutable game2;
-
-	constructor(Game2 game2_) {
-		require(address(game2_) != address(0));
+	constructor(address game2_) {
+		require(game2_ != address(0));
 		game2 = game2_;
 	}
 
@@ -21,16 +18,15 @@ contract Game1 is GameBase {
 	function destruct(bool destructGame2_, address payable newGame1_) external onlyOwner {
 		require(newGame1_ != address(0));
 		if (destructGame2_) {
-			game2.destruct();
+			Game2(payable(game2)).destruct();
 		}
 		selfdestruct(newGame1_);
 	}
 
 	/// @notice This method forwards an unrecognized call to `game2`.
 	/// todo-1 In the production, this method not necessarily needs to be `payable`.
-	/// todo-1 I have found this code online. Is it correct?
 	fallback() external payable {
-		address game2_ = address(game2);
+		address game2_ = game2;
 		assembly {
 			// It's possible to not execute this line and use zero instead of `ptr_`, but this implementation is more robust.
 			let ptr_ := mload(0x40)
