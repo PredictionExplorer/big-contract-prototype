@@ -32,15 +32,19 @@ contract Game1 is GameBase {
 	fallback() external payable {
 		address game2_ = address(game2);
 		assembly {
-			calldatacopy(0, 0, calldatasize())
-			let result_ := delegatecall(gas(), game2_, 0, calldatasize(), 0, 0)
-			returndatacopy(0, 0, returndatasize())
+			// It's possible to not execute this line and use zero instead of `ptr_`, but this implementation is more robust.
+			let ptr_ := mload(0x40)
+
+			calldatacopy(ptr_, 0, calldatasize())
+			let result_ := delegatecall(gas(), game2_, ptr_, calldatasize(), 0, 0)
+			let size_ := returndatasize()
+			returndatacopy(ptr_, 0, size_)
 			switch result_
 				case 0 {
-					revert(0, returndatasize())
+					revert(ptr_, size_)
 				}
 				default {
-					return(0, returndatasize())
+					return(ptr_, size_)
 				}
 		}
 	}
@@ -57,7 +61,7 @@ contract Game1 is GameBase {
 
 	/// @notice An example game logic method.
 	function _bidWithEth() private {
-		require(msg.value > 0);
+		require(msg.value > 0, "Zero value.");
 
 		if (lastBidderAddress == address(0)) {
 			mainPrizeTime = block.timestamp + (20 seconds);

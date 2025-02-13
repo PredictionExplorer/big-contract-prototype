@@ -13,7 +13,7 @@ describe("Game", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, bidder1, bidder2, signer3,] = signers;
 
-		// We will use this to call `game2` methods via `game1`.
+		// We will use this to call `game2` methods via `delegatecall`.
 		const game1AsGame2 = game2Factory.attach(game1Addr);
 
 		expect(await game1.game2()).equal(game2Addr);
@@ -22,22 +22,16 @@ describe("Game", function () {
 		// Bidding by sending ETH.
 		await bidder1.sendTransaction({to: game1Addr, value: 10n,});
 
-		// Bidding with zero value is not allowed.
-		await expect(game1.connect(bidder1).bidWithEth({value: 0n,})).reverted;
-
+		await expect(game1.connect(bidder1).bidWithEth({value: 0n,})).revertedWith("Zero value.");
 		await game1.connect(bidder1).bidWithEth({value: 100n,});
 		await game1.connect(bidder2).bidWithEth({value: 1_000n,});
-
-		// It's too early to claim.
-		await expect(game1AsGame2.connect(bidder2).claimMainPrize()).reverted;
-
+		await expect(game1AsGame2.connect(bidder2).claimMainPrize()).revertedWith("Early claim.");
 		await hre.ethers.provider.send("evm_increaseTime", [60,]);
 		// await hre.ethers.provider.send("evm_mine");
-
-		// A non-last bidder attempts to claim.
-		await expect(game1AsGame2.connect(bidder1).claimMainPrize()).reverted;
+		await expect(game1AsGame2.connect(bidder1).claimMainPrize()).revertedWith("The caller is not the last bidder.");
 
 		// `Game1.fallback` is `payable`, but `Game2.claimMainPrize` is not, so `delegatecall` fails.
+		// This reverts with "non-payable function was called with value 2".
 		await expect(game1AsGame2.connect(bidder2).claimMainPrize({value: 2n,})).reverted;
 
 		await game1AsGame2.connect(bidder2).claimMainPrize();
@@ -49,18 +43,15 @@ describe("Game", function () {
 		// Transferring some ETH to `game2`. We are supposed to get it back on contract destruction.
 		await signer3.sendTransaction({to: game2Addr, value: 10_000n,});
 
-		// An unauthorized caller attempts to call a restricted method.
-		await expect(game1.connect(signer3).destruct(true, signer3.address)).reverted;
+		await expect(game1.connect(signer3).destruct(true, signer3.address)).revertedWithCustomError(game1, "OwnableUnauthorizedAccount");
+		await expect(game2.connect(signer3).destruct()).revertedWith("Game2.destruct caller is unauthorized.");
 
-		// An unauthorized caller attempts to call a restricted method.
-		await expect(game2.connect(signer3).destruct()).reverted;
-
-		// An unauthorized caller attempts to call a restricted method via `delegatecall`.
-		await expect(game1AsGame2.connect(signer3).destruct()).reverted;
+		// Calling `game2.destruct` via `delegatecall`.
+		await expect(game1AsGame2.connect(signer3).destruct()).revertedWith("Game2.destruct caller is unauthorized.");
 
 		const signer3BalanceAmountBeforeContractDestruction = await hre.ethers.provider.getBalance(signer3.address);
 
-		// This transaction is executed by `deployerAcct`.
+		// This call is made by `deployerAcct`.
 		await game1.destruct(true, signer3.address);
 
 		const signer3BalanceAmountAfterContractDestruction = await hre.ethers.provider.getBalance(signer3.address);

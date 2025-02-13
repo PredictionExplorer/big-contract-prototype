@@ -12,8 +12,8 @@ contract Game2 is GameBase {
 	constructor() {
 	}
 
-	/// @notice The deployment script calls this method.
-	/// It's possible to call this method again if we deploy a new version of `Game1` and leave the old `Game2`.
+	/// @notice The deployment script calls this method the normal way (not via `delegatecal`).
+	/// It's possible to call this method again if we deploy a new version of `Game1` and keep the old `Game2`.
 	function prepare(address game1_) external onlyOwner {
 		require(game1_ != address(0));
 		game1 = game1_;
@@ -21,12 +21,13 @@ contract Game2 is GameBase {
 
 	/// @notice `Game1` calls this method the normal way (not via `delegatecall`).
 	function destruct() external /*onlyOwner*/ {
-		require(_msgSender() == game1);
+		require(_msgSender() == game1, "Game2.destruct caller is unauthorized.");
 		selfdestruct(payable(_msgSender()));
 	}
 
 	/// @notice We need this method to test that on contract destruction we will get back any ETH
 	/// that somehow ended up in the `Game2` account.
+	/// The test script calls this method the normal way (not via `delegatecal`).
 	receive() external payable {
 	}
 
@@ -34,8 +35,8 @@ contract Game2 is GameBase {
 	/// `Game1` calls this method via `delegatecall`.
 	/// Obviously, hackers can call it the normal way as well, which could mess up `Game2` state, which is OK.
 	function claimMainPrize() external {
-		require(_msgSender() == lastBidderAddress);
-		require(block.timestamp >= mainPrizeTime);
+		require(_msgSender() == lastBidderAddress, "The caller is not the last bidder.");
+		require(block.timestamp >= mainPrizeTime, "Early claim.");
 		++ roundNum;
 		lastBidderAddress = address(0);
 	}
