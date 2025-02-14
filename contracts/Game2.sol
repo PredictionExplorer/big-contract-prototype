@@ -7,17 +7,19 @@ contract Game2 is GameBase {
 	constructor() {
 	}
 
-	/// @notice The deployment script calls this method the normal way (not via `delegatecal`).
-	/// It's possible to call this method again if we deploy a new version of `Game1` and keep the old `Game2`.
-	function prepare(address game1_) external onlyOwner {
-		require(game1_ != address(0));
-		game1 = game1_;
-	}
-
 	/// @notice `Game1` calls this method the normal way (not via `delegatecall`).
 	function destruct() external /*onlyOwner*/ {
 		require(_msgSender() == game1, "Game2.destruct caller is unauthorized.");
 		selfdestruct(payable(_msgSender()));
+	}
+
+	/// @notice The deployment script calls this method the normal way (not via `delegatecal`).
+	/// It will call this method again if it deploys a new version of `Game1` and keeps the existing `Game2`.
+	function setGame1(address newValue_) external onlyOwner {
+		require(newValue_ != address(0));
+		game1 = newValue_;
+
+		// todo-1 In the production, emit an event here.
 	}
 
 	/// @notice We need this method to test that on contract destruction we will get back any ETH

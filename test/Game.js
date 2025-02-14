@@ -13,15 +13,15 @@ describe("Game", function () {
 			await loadFixture(deployContractsForUnitTesting);
 		const [signer0, bidder1, bidder2, signer3,] = signers;
 
-		// We will use this to call `game2` methods via `delegatecall`.
-		const game1AsGame2 = game2Factory.attach(game1Addr);
+		// We use this to call `game2` methods via `delegatecall`.
+		const game2Proxy = game2Factory.attach(game1Addr);
 
 		expect(await game1.game1()).equal(hre.ethers.ZeroAddress);
 		expect(await game1.game2()).equal(game2Addr);
 		expect(await game2.game1()).equal(game1Addr);
 		expect(await game2.game2()).equal(hre.ethers.ZeroAddress);
-		await expect(game2.connect(signer3).prepare(signer3.address)).revertedWithCustomError(game2, "OwnableUnauthorizedAccount");
-		await expect(game1AsGame2.connect(signer3).prepare(signer3.address)).revertedWithCustomError(game1AsGame2, "OwnableUnauthorizedAccount");
+		await expect(game2.connect(signer3).setGame1(signer3.address)).revertedWithCustomError(game2, "OwnableUnauthorizedAccount");
+		await expect(game2Proxy.connect(signer3).setGame1(signer3.address)).revertedWithCustomError(game2Proxy, "OwnableUnauthorizedAccount");
 
 		// Bidding by sending ETH.
 		await bidder1.sendTransaction({to: game1Addr, value: 10n,});
@@ -29,16 +29,16 @@ describe("Game", function () {
 		await expect(game1.connect(bidder1).bidWithEth({value: 0n,})).revertedWith("Zero value.");
 		await game1.connect(bidder1).bidWithEth({value: 100n,});
 		await game1.connect(bidder2).bidWithEth({value: 1_000n,});
-		await expect(game1AsGame2.connect(bidder2).claimMainPrize()).revertedWith("Early claim.");
+		await expect(game2Proxy.connect(bidder2).claimMainPrize()).revertedWith("Early claim.");
 		await hre.ethers.provider.send("evm_increaseTime", [60,]);
 		// await hre.ethers.provider.send("evm_mine");
-		await expect(game1AsGame2.connect(bidder1).claimMainPrize()).revertedWith("The caller is not the last bidder.");
+		await expect(game2Proxy.connect(bidder1).claimMainPrize()).revertedWith("The caller is not the last bidder.");
 
 		// `Game1.fallback` is `payable`, but `Game2.claimMainPrize` is not, so `delegatecall` fails.
 		// This reverts with "non-payable function was called with value 2".
-		await expect(game1AsGame2.connect(bidder2).claimMainPrize({value: 2n,})).reverted;
+		await expect(game2Proxy.connect(bidder2).claimMainPrize({value: 2n,})).reverted;
 
-		await game1AsGame2.connect(bidder2).claimMainPrize();
+		await game2Proxy.connect(bidder2).claimMainPrize();
 		expect(await game1.roundNum()).equal(1n);
 
 		// `game2` state isn't supposed to change. Although hackers can try to mess things up there, which is OK.
@@ -49,18 +49,20 @@ describe("Game", function () {
 
 		await expect(game1.connect(signer3).destruct(true, signer3.address)).revertedWithCustomError(game1, "OwnableUnauthorizedAccount");
 		await expect(game2.connect(signer3).destruct()).revertedWith("Game2.destruct caller is unauthorized.");
-		await expect(game1AsGame2.connect(signer3).destruct()).revertedWith("Game2.destruct caller is unauthorized.");
-		const signer3BalanceAmountBeforeContractDestruction = await hre.ethers.provider.getBalance(signer3.address);
+		await expect(game2Proxy.connect(signer3).destruct()).revertedWith("Game2.destruct caller is unauthorized.");
+		let signer3BalanceAmountChange = await hre.ethers.provider.getBalance(signer3.address);
 
 		// This call is made by `deployerAcct`.
 		await game1.destruct(true, signer3.address);
 
-		const signer3BalanceAmountAfterContractDestruction = await hre.ethers.provider.getBalance(signer3.address);
+		signer3BalanceAmountChange = await hre.ethers.provider.getBalance(signer3.address) - signer3BalanceAmountChange;
 
 		// We got back ETH from both game accounts.
-		expect(signer3BalanceAmountAfterContractDestruction).equal(signer3BalanceAmountBeforeContractDestruction + 11_110n);
+		expect(signer3BalanceAmountChange).equal(11_110n);
 		expect(await hre.ethers.provider.getBalance(game1Addr)).equal(0n);
 		expect(await hre.ethers.provider.getBalance(game2Addr)).equal(0n);
+
+		// expect(await hre.ethers.provider.getCode(signer3.address)).equal("0x");
 
 		// Surprisingly, bytecode and storage of both game contracts have not been deleted from the blockchain,
 		// which is how stuff currently works by design.

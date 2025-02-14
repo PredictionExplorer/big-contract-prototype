@@ -36,7 +36,7 @@ const deployContracts = async function (
 	await game1.waitForDeployment();
 	const game1Addr = await game1.getAddress();
 
-   await game2.prepare(game1Addr);
+   await game2.setGame1(game1Addr);
 
 	return {
       game1Factory,
